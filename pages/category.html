@@ -1,0 +1,216 @@
+<div class="category">
+  <!-- 按钮区域 -->
+  <div class="div_btn">
+    <button id="btn_add" type="button" class="btn btn-primary">新增</button>
+    <button id="btn_bcdel" type="button" class="btn btn-danger">批量删除</button>
+  </div>
+  <!-- 表格区域 -->
+  <table class="table table-hover">
+    <thead>
+      <tr>
+        <th scope="col"><input type="checkbox"></th>
+        <th scope="col">栏目名称</th>
+        <th scope="col">栏目描述</th>
+        <th scope="col">父栏目ID</th>
+        <th scope="col">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      
+    </tbody>
+  </table>
+  <!-- 新增模态框 -->
+  <div class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalLabel">新增表单</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form>
+            <input type="text" style="display: none;" id="form_id" >
+            <div class="form-group">
+              <label for="recipient-name" class="col-form-label">栏目名称:</label>
+              <input type="text" class="form-control" id="form_name">
+            </div>
+            <div class="form-group">
+              <label for="recipient-name" class="col-form-label">父栏目ID:</label>
+              <select name="" id="form_parentId" class="form-control">
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="message-text" class="col-form-label">描述信息:</label>
+              <textarea class="form-control" id="form_description"></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+          <button id="btn_submit" type="button" class="btn btn-primary">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  // 全局变量区域
+  var token = localStorage.getItem('token');
+  var baseUrl = 'http://localhost:7788';
+  var parentsCat = [];
+  findAllCategories(); // 调用查询栏目的方法
+
+  // 1.查询所有的栏目信息
+  function findAllCategories(){
+    $.ajax({
+      url: baseUrl + '/category/findAll',
+      method: 'get',
+      headers: {'Authorization':token},
+      success: function(res){
+        $('tbody').empty();
+        res.data.forEach(function(item){
+          $(`
+            <tr>
+              <td><input type="checkbox" id="id" value="`+item.id+`"></td>
+              <td id="td_name">`+item.name+`</td>
+              <td id="td_description">`+item.description+`</td>
+              <td id="td_parentId">`+item.parentId+`</td>
+              <td>
+                <span class="btn_del"><i class="iconfont icon-shanchu"></i></span>
+                <span class="btn_edit"><i class="iconfont icon-xiugai"></i></span>
+              </td>
+            </tr>
+          `).appendTo($('tbody'));
+        })
+        // 筛选出所有的父栏目，保存到parentsCat
+        parentsCat = res.data.filter(function(item){
+          return item.parentId == null
+        })
+        // 清空父栏目id单选框
+        $('#form_parentId').empty();
+        // 追加子栏目节点到父栏目单选框
+        parentsCat.forEach(function(item){
+          $(`<option value="`+item.id+`">`+item.name+`</option>`).appendTo($('#form_parentId'))
+        })
+      }
+    })
+  }
+
+  // 2.单个删除事件
+  $('tbody').on('click','span',function(event){
+    switch(this.className){
+      case 'btn_del':
+        // 获取ID
+        var id = $(this).closest('tr').find('input[type=checkbox]').val();
+        var result = confirm('确认删除？');
+        if(result){
+          $.ajax({
+            url: baseUrl + '/category/deleteById',
+            method: 'get',
+            data: {id:id},
+            headers:{'Authorization':token},
+            success: function(res){
+              // 成功删除后，重载数据
+              findAllCategories();
+              // 提示删除成功
+              alert(res.message);
+            }
+          })
+        } else {
+          alert('取消删除');
+        }
+        break;
+      case 'btn_edit':
+        // 获取当前行的信息
+        var id = $(this).closest('tr').find('input[type=checkbox]').val();
+        var name = $(this).closest('tr').find('td[id="td_name"]').text();
+        var parentId = $(this).closest('tr').find('td[id="td_parentId"]').text();
+        var description = $(this).closest('tr').find('td[id="td_description"]').text();
+        $('#form_id').val(id);
+        $('#form_name').val(name);
+        $('#form_parentId').val(parentId);
+        $('#form_description').val(description);
+        // 打开模态框
+        $('#modalLabel').text('修改表单');
+        $('#addModal').modal('show');
+    }
+    
+  })
+
+  // 3.点击新增按钮，弹出模态框
+  $('#btn_add').click(function(){
+    $('#form_name').val('');
+    $('#form_description').val('');
+    $('#addModal').modal('show');
+    $('#modalLabel').text('新增表单');
+  })
+
+  // 4.点击保存按钮
+  $('#btn_submit').click(function(){
+    var id = $('#form_id').val();
+    var name = $('#form_name').val();
+    var parentId = $('#form_parentId').val();
+    var description = $('#form_description').val();
+    var data;
+    if(id) {
+      data = {
+        id,
+        name,
+        parentId,
+        description
+      }
+    } else {
+      data = {
+        name,
+        parentId,
+        description
+      }
+    }
+    if(name){
+      $.ajax({
+        url:baseUrl + '/category/saveOrUpdate',
+        method:'post',
+        data:data,
+        headers:{'Authorization':token},
+        success:function(res){
+          findAllCategories();
+          $('#addModal').modal('hide');
+          alert(res.message);
+        }
+      })
+    }
+  })
+  //批量删除
+  $('#btn_bcdel').click(function(){
+    var  ids = $("input:checked").toArray().map(function(item){
+      return item.value
+    });
+    if(ids.length>0){
+      var result = confirm('是否确认删除?')
+      if(result = true){
+        $.ajax({
+          url:baseUrl+'/category/batchDelete',
+          method:'post',
+          headers:{'Authorization':token},
+          data:{ids:ids.toString()},
+          success:function(res){
+            findAllCategories();
+            $("input[type='checkbox']").prop("checked", false);
+            alert(res.message)
+          },
+          error:function(res){
+            $("input[type='checkbox']").prop("checked", false);
+            alert("失败")
+          }
+        })
+      }else{
+        console.log("取消删除")
+      }
+    }else{
+      alert('请勾选要删除的栏目')
+    }
+  
+  })
+</script>

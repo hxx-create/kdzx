@@ -1,0 +1,293 @@
+<div class="article">
+   <!-- 按钮区域 -->
+   <div class="div_btn">
+    <button id="btn_add" type="button" class="btn btn-primary">新增</button>
+    <button id="btn_bcdel" type="button" class="btn btn-danger">批量删除</button>
+  </div>
+  <!-- 表格区域 -->
+  <table class="table table-hover">
+    <thead>
+      <tr>
+        <th scope="col"><input type="checkbox"></th>
+        <th scope="col">文章标题</th>
+        <th scope="col">发布时间</th>
+        <th scope="col">审核状态</th>
+        <th scope="col">所属栏目</th>
+        <th scope="col">文章封面</th>
+        <th scope="col">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+     
+    </tbody>
+  </table>
+  <!-- 详情 -->
+  <div class="modal fade" id="articleDetailsModal" tabindex="-1" role="dialog" aria-labelledby="articleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title" id="articleModalLabel">Modal title</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            </div>
+            <div class="modal-body">
+            
+            </div>
+            <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary">Save changes</button>
+            </div>
+        </div>
+    </div>
+  </div>
+  <!-- 新增 -->
+  <div class="modal fade" id="articleAddModal" tabindex="-1" role="dialog" aria-labelledby="articleModalLabel_publish" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="articleModalLabel_publish">Modal title</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                  <input type="text" style="display: none;" id="article_id" >
+                    <div class="form-group">
+                      <label for="article_name">文章标题</label>
+                      <input type="email" class="form-control" id="article_name" aria-describedby="emailHelp">
+                    </div>
+                    <div class="form-group">
+                        <label for="article_parentId">所属栏目</label>
+                        <select class="form-control" id="article_parentId">
+                          <option value=""></option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="article_source">文章封面</label>
+                        <input type="hidden" id="imagepath" name="">  <!-- 保存的图片id 用于表单提交 -->
+                        <span id="upload_duixiang">上传</span><!-- 上传按钮 -->
+                        <div class="show"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="article_content">文章内容</label>
+                        <div id="editor"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+                <button type="button" id='save_btn' class="btn btn-primary">保存</button>
+            </div>
+        </div>
+    </div>
+  </div>
+  <!-- 分页 -->
+  <div id="myPage" class="demo"></div>
+</div>
+<script>
+  var token = localStorage.getItem('token');
+  var baseUrl = 'http://localhost:7788';
+  aticlePageQuery(1);//调用方法分页
+  findAllCategories();
+  //时间戳转日期格式
+  function timestampToTime(timestamp) {
+    var date = new Date(timestamp);//时间戳为10位需*1000，时间戳为13位的话不需乘1000
+    Y = date.getFullYear() + '-';
+    M = (date.getMonth()+1 < 10 ? '0'+(date.getMonth()+1) : date.getMonth()+1) + '-';
+    D = date.getDate() + ' ';
+    h = date.getHours() + ':';
+    m = (date.getMinutes() < 10 ? '0'+(date.getMinutes()) : date.getMinutes()) + ':';
+    s = (date.getSeconds() < 10 ? '0'+(date.getSeconds()) : date.getSeconds());
+    return Y+M+D+h+m+s;
+  }
+
+  //1.分页查询文章信息
+  function aticlePageQuery(page) {
+     var p = page || 1;
+     $.ajax({
+         url: baseUrl+'/article/pageQuery',
+         method:'get',
+         data: {
+             page: p,
+             pageSize: 5
+         },
+         headers: {'Authorization':token},
+         success: function(res) {
+          $('tbody').empty();//加载前清空
+          res.data.list.forEach(function(item) {
+               $( `
+                <tr>
+                <td><input type="checkbox" value="`+item.id+`"></td>
+                <td >`+item.title+`</td>
+                <td >`+item.publishTime+`</td>
+                <td >`+item.status+`</td>
+                <td >`+item.category.name+`</td>
+                <td >`+item.source+`</td>
+                <td>
+                  <span class="btn_del"><i class="iconfont icon-shanchu"></i></span>
+                  <span class="btn_edit"><i class="iconfont icon-xiugai"></i></span>
+                  <span class="btn_edit"><i class="iconfont icon-xiangqing"></i></span>
+                </td>
+              </tr>
+               `).appendTo($('tbody'))
+             });
+             //初始化分页插件        
+             $("#myPage").sPage({
+                 page: res.data.page, //当前页码              
+                 pageSize: 5, //每页显示多少条数据，默认10条               
+                 total: data.total, //数据总条数,后台返回              
+                 backFun: function(page) { //点击分页按钮回调函数，返回当前页码                    
+                  aticlePageQuery(page);
+                 }
+             });
+         },
+     });
+ }
+ //2.点击新增按钮,打开模态框
+  $('#btn_add').click(function(){
+    //清空列表
+    $('#article_name').val('');
+    $('#editor').empty();
+    //打开模态框
+    $('articleModalLabel_publish').text('新增文章');
+    //初始化图片上传工具
+    a = $("#upload_duixiang").FraUpload({
+        view        : ".show",      // 视图输出位置
+        url         : "http://134.175.100.63:5588/file/upload", // 上传接口
+        fetch       : "img",   // 视图现在只支持img
+        debug       : false,    // 是否开启调试模式
+        /* 外部获得的回调接口 */
+        onLoad: function(e){                    // 选择文件的回调方法
+            console.log("外部: 初始化完成...");
+        },
+        breforePort: function (e) {         // 发送前触发
+            console.log("文件发送之前触发");
+        },  
+        successPort: function (e) {         // 发送成功触发
+            console.log("文件发送成功");
+            onload_image()
+        },
+        errorPort: function (e) {       // 发送失败触发
+            console.log("文件发送失败");
+            onload_image()
+        },
+        deletePost: function(e){    // 删除文件触发
+            console.log("删除文件");
+            console.log(e);
+            alert('删除了'+e.filename)
+            onload_image()
+        },
+        sort: function(e){      // 排序触发
+            console.log("排序");
+            onload_image()
+        },
+    });
+    //获取图片上传信息
+    function onload_image(){
+      var res = a.FraUpload.show(),
+      var ids = [],
+      for(let k in res){
+            this_val = res[k]
+            if(!empty(res[k]['is_upload']) && !empty(res[k]['ajax'])){
+                ajax_value = res[k]['ajax'];
+                ids.push(ajax_value.data.id)
+            }
+        }
+        $("#imagepath").val(ids);
+        article_src = res[0].ajax.data
+    
+    }
+    //判断变量是否为空
+    function empty(value){
+        if(value=="" || value==undefined || value==null || value==false || value==[] || value=={}){
+            return true;
+        }else{
+            return false;
+        }
+    }
+    // 初始化富文本编辑器
+    var E = window.wangEditor;
+    var editor = new E('#editor');
+    editor.create();
+    // 打开模态框
+    $('#articleAddModal').modal('show');
+  })
+  // 3.点击保存按钮
+  $('#save_btn').click(function(){
+    // 获取表中的数据
+    var id = $('#article_id').val();
+    var title = $('#article_name').val();
+    var categoryId = $('#article_parentId').val();
+    var content = $('.w-e-text').html();
+    var data;
+    if(id){
+      data = {
+        id,
+        title,
+        categoryId,
+        content,
+        source:'http://134.175.100.63:8686/group1/'+article_src
+      }
+    } else {
+      data = { 
+        title,
+        categoryId,
+        content,
+        source:'http://134.175.100.63:8686/group1/'+article_src
+      }
+    }
+    if(title && categoryId && content){
+      $.ajax({
+        url:baseUrl + '/article/saveOrUpdate',
+        method:'post',
+        data:data,
+        headers:{'Authorization':token},
+        success:function(res){
+          articlesPageQuery(1);
+          $('#articleAddModal').modal('hide');
+          alert(res.message);
+        }
+      })
+    } else {
+      alert('请输入完整的数据！')
+    }
+
+  })
+  //4.点击详情按钮
+  $('tbody').on('click','span',function(){
+    id = $(this).closest('tr').find('input{type=checkbox').val();
+    $ajax({
+      url:baseUrl + '/article/findById',
+      method:'get',
+      headers:{'Authorization':token},
+      data:{id:id},
+      success:function(res){
+        $('#articleModalLabel').text(res.data.title);
+        $('#articleDetailsModal .modal-body').html(res.data.content);
+        $('#articleDetailsModal').modal('show');
+      }
+    })
+  })
+
+  //查询栏目信息
+  function findAllCategories(){
+    $.ajax({
+      url:baseUrl+'/category/findAll',
+      method:'get',
+      headers: {'Authorization':token},
+      success:function(res){
+         // 清空父栏目id单选框
+         $('#article_parentId').empty();
+        // 追加子栏目节点到父栏目单选框
+        res.data.forEach(function(item){
+          $(`<option value="`+item.id+`">`+item.name+`</option>`).appendTo($('#article_parentId'))
+        })
+      }
+    })
+  }
+
+  
+</script>
+

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录页面</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.4.1/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.5.0/jquery.min.js"></script>
+    <script>
+        $(function(){
+            $('#loginBtn').click(function(){
+                var username = $('#username').val()
+                var password = $('#password').val()
+                // 通过$.ajax()向后端发送数据
+                // contentType取值：
+                //     1、application/json，并且调用JSON.stringify()方法
+                //        json字符串 '{"key1":"value1","key2":"value2"}'
+                //     2、application/x-www-form-urlencoded（Jquery的Ajax请求默认方式）
+                //        键值对形式 key1=value1&key2=value2
+                if(username && password){
+                    $.ajax({
+                        url:'http://localhost:7788/user/login',
+                        method:'post',
+                        data:JSON.stringify({
+                            username:username,
+                            password:password,
+                        }),
+                        contentType:'application/json;charset=UTF-8',
+                        success:function(res){
+                         
+                            localStorage.setItem('token',res.data.token)
+                            var token = localStorage.getItem('token');
+                            if(token){
+                                // 当前url
+                                location.href = 'http://127.0.0.1:5500/kdzx_jQuery/project_kd/index.html'
+                                // location.href = 'http://47.93.255.92/project_kd/index.html'
+                            } else {
+                                alert('登陆失败')
+                            }
+                        }
+                    })
+                } else {
+                    alert('用户名或密码错误')
+                }
+                return false
+            })
+        })
+    </script>
+</head>
+<body>
+    <div class="login">
+        <form>
+            <h2>看点咨询平台</h2>
+            <div class="form-group">
+                <label for="username">姓名</label>
+                <input type="username" class="form-control" id="username" placeholder="请输入用户名">
+            </div>
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" class="form-control" id="password" placeholder="请输入密码">
+            </div>
+            <div class="form-group">
+                <!-- 阻止表单默认行为 -->
+                <input type="submit" value="登录" id="loginBtn" class="btn btn-primary">
+                <!-- <button class="btn btn-primary">登录</button> -->
+            </div>
+            <div style='margin-top: 2em;'>
+                <span>用户名：admin1 </span>
+                <span>密码：123321</span>
+            </div>
+        </form>
+    </div>
+</body>
+<style>
+    html,body {
+        height: 100%;
+    }
+    .login {
+        height: 100%;
+        background-image: url('./image/3.jpg');
+        background-repeat: no-repeat;
+        background-size: 100% 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    h2{
+        text-align: center;
+        color: #fff;
+    }
+    .login form {
+        width: 400px;
+        height: 300px;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background-color: rgba(57,117,95,0.1);
+    }
+    .login form:hover{
+        box-shadow: 0px 0px 5px white;
+    }
+</style>
+</html>

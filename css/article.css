@@ -1,0 +1,26 @@
+.article-option{
+    overflow: auto;
+    height: 90%;
+}
+.btn-left{
+    float: left;
+}
+.btn-right{
+    float: right;
+    width: 700px;
+}
+.btn-right *{
+    display: inline-block;
+}
+.btn-right input{
+    width: 200px;
+}
+#startTime,#endTime{
+    width: 120px;
+}
+.article{
+    height: 100%;
+}
+#myPage1 {
+    margin-top: 1em;
+}
